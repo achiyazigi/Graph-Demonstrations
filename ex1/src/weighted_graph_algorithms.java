@@ -1,6 +1,7 @@
 package ex1.src;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 
 import javax.management.InvalidAttributeValueException;
 import javax.swing.JFrame;
@@ -79,5 +80,4 @@ public interface weighted_graph_algorithms {
 
     public void maxMatchHungarian() throws InvalidAttributeValueException;
 
-    public void HungarianStepByStep(JFrame gui) throws InvalidAttributeValueException;
 }

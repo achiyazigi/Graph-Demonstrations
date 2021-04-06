@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
+import java.util.concurrent.Executor;
 
 import javax.management.InvalidAttributeValueException;
 import javax.swing.JFrame;
@@ -222,31 +223,7 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         }
     }
 
-    public void HungarianStepByStep(JFrame gui) throws InvalidAttributeValueException{
-        HashSet<edge_info> M = new HashSet<>();
-        kotlin.Pair<Collection<node_info>,Collection<node_info>> ab = bipartite();
-        LinkedList<edge_info> P = null;
-        while((P = augmenting(ab))!=null){
-            System.out.println("found aug path:\n"+P);
-            recolor(P);
-            gui.repaint();
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        for (node_info n : this.g.getV()) {
-            int n_key = n.getKey();
-            for (node_info ni : this.g.getV(n_key)) {
-                edge_info e = g.getEdge(n_key, ni.getKey());
-                if(e.isInMatch()){
-                    M.add(e);
-                }
-            }
-        }
-        System.out.println(M);
-    }
+   
 
     public void maxMatchHungarian() throws InvalidAttributeValueException{
         HashSet<edge_info> M = new HashSet<>();
@@ -268,7 +245,7 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         System.out.println(M);
     }
 
-    private LinkedList<edge_info> augmenting(kotlin.Pair<Collection<node_info>,Collection<node_info>> ab) {
+    protected LinkedList<edge_info> augmenting(kotlin.Pair<Collection<node_info>,Collection<node_info>> ab) {
         this.reset();
         Stack<node_info> s = new Stack<>();
         Collection<node_info> a = ab.getFirst();
@@ -336,7 +313,7 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         return res;
     }
 
-    private Pair<Collection<node_info>, Collection<node_info>> bipartite() throws InvalidAttributeValueException {
+    protected Pair<Collection<node_info>, Collection<node_info>> bipartite() throws InvalidAttributeValueException {
         this.reset();
         Collection<node_info> a = new LinkedList<>();
         Collection<node_info> b = new LinkedList<>();
@@ -373,7 +350,7 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         return ab;
     }
 
-    private void recolor(LinkedList<edge_info> p) {
+    protected void recolor(LinkedList<edge_info> p) {
         for (edge_info n : p) {
             n.setInMatch(!n.isInMatch());
         }

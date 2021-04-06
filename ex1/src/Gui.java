@@ -4,9 +4,15 @@ import javax.management.InvalidAttributeValueException;
 import javax.swing.*;
 import javax.swing.event.MouseInputListener;
 
+
 import java.awt.*;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.awt.event.*;
 import java.io.IOException;
 import java.net.URI;
@@ -14,17 +20,20 @@ import java.net.URISyntaxException;
 
 public class Gui extends JFrame{
     public static int key_counter = 0;
-
-
+    
     /**
      *
      */
     private static final long serialVersionUID = 1L;
     public weighted_graph g;
+    
 
 
+    private static class Graph_hendler implements ActionListener, Observer{
+        final Lock lock = new ReentrantLock();
 
-    private static class Graph_hendler implements ActionListener{
+        final Condition step  = lock.newCondition();
+
 
         private class TextBox_hendler implements ActionListener{
             private Gui gui;
@@ -142,22 +151,22 @@ public class Gui extends JFrame{
             }
 
             if(e.getActionCommand() == "Max Match"){
-                weighted_graph_algorithms ga = new WGraph_Algo();
-                boolean s_b_s = gui.getStepByStepStatus();
+                RunnableGraphAlgo ga = new RunnableGraphAlgo(step, this);
                 ga.init(gui.g);
+                boolean s_b_s = gui.getStepByStepStatus();
                 if(s_b_s){
-                    Executor executor = Executors.newSingleThreadExecutor();
-                    executor.execute(() -> {
-                        try {
-                            ga.HungarianStepByStep(gui);
-                        } catch (InvalidAttributeValueException e2) {
-                            e2.printStackTrace();
-                        }
-                    });
+                    try {
+                        Executor executor = Executors.newSingleThreadExecutor();
+                        executor.execute(ga);
+                    } catch (Throwable e1) {
+                        e1.printStackTrace();
+                    }
                 }
                 else{
+                    weighted_graph_algorithms ga_simple = new WGraph_Algo();
+                    ga_simple.init(gui.g);
                     try {
-                        ga.maxMatchHungarian();
+                        ga_simple.maxMatchHungarian();
                     } catch (InvalidAttributeValueException e1) {
                         e1.printStackTrace();
                     }
@@ -165,6 +174,11 @@ public class Gui extends JFrame{
                 }
             }
 
+        }
+
+        @Override
+        public void update(Observable o, Object arg) {
+            this.gui.repaint();
         }
 
     }
