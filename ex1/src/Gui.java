@@ -4,6 +4,7 @@ import javax.management.InvalidAttributeValueException;
 import javax.swing.*;
 import javax.swing.event.MouseInputListener;
 
+import javax.swing.plaf.metal.MetalButtonUI;
 
 import java.awt.*;
 import java.util.Observable;
@@ -14,6 +15,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.awt.event.*;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,9 +33,8 @@ public class Gui extends JFrame{
 
     private static class Graph_hendler implements ActionListener, Observer{
         final Lock lock = new ReentrantLock();
-
         final Condition step  = lock.newCondition();
-
+        private weighted_graph_algorithms graph_algo;
 
         private class TextBox_hendler implements ActionListener{
             private Gui gui;
@@ -105,75 +106,113 @@ public class Gui extends JFrame{
         static int x = 20;
         static int y = 20;
         private Gui gui;
-
+        private JDialog dialog;
+        private JFileChooser fileChooser;
         public Graph_hendler(Gui gui){
             super();
             this.gui = gui;
+            graph_algo = new WGraph_Algo();
+            graph_algo.init(gui.g);
         }
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            if(e.getActionCommand() == "Add Node"){
-                gui.g.addNode(key_counter);
-                node_info added = gui.g.getNode(key_counter);
-                added.setX(x);
-                added.setY(y);
-                y+=40;
-                if(y > this.gui.getHeight() - 80){
-                    y = 20;
-                    x += 60;
-                }
-                key_counter++;
-                this.gui.repaint();
-            }
-
-            if(e.getActionCommand() == "Remove Node"){
-                JDialog d = new JDialog(gui, "Enter Key", true);
-                d.setSize(180, 60);
-                JFormattedTextField textBox = new JFormattedTextField();
-                textBox.setName("Remove");
-                textBox.addActionListener(new TextBox_hendler(gui, textBox));
-                d.add(textBox);
-                d.setLocationRelativeTo(gui);
-                d.setVisible(true);
-            }
-            
-            if(e.getActionCommand() == "Connect" || e.getActionCommand() == "Disconnect"){
-                JDialog d = new JDialog(gui, "Enter Pair: key1-key2", true);
-                d.setSize(300, 60);
-                JFormattedTextField textBox = new JFormattedTextField();
-                textBox.setName(e.getActionCommand());
-                
-                textBox.addActionListener(new TextBox_hendler(gui, textBox));
-                d.add(textBox);
-                d.setLocationRelativeTo(gui);
-                d.setVisible(true);
-            }
-
-            if(e.getActionCommand() == "Max Match"){
-                RunnableGraphAlgo ga = new RunnableGraphAlgo(step, this);
-                ga.init(gui.g);
-                boolean s_b_s = gui.getStepByStepStatus();
-                if(s_b_s){
-                    try {
-                        Executor executor = Executors.newSingleThreadExecutor();
-                        executor.execute(ga);
-                    } catch (Throwable e1) {
-                        e1.printStackTrace();
+            switch(e.getActionCommand()){
+                case("Add Node"):
+                    gui.g.addNode(key_counter);
+                    node_info added = gui.g.getNode(key_counter);
+                    added.setX(x);
+                    added.setY(y);
+                    y+=40;
+                    if(y > this.gui.getHeight() - 80){
+                        y = 20;
+                        x += 60;
                     }
-                }
-                else{
-                    weighted_graph_algorithms ga_simple = new WGraph_Algo();
-                    ga_simple.init(gui.g);
-                    try {
-                        ga_simple.maxMatchHungarian();
-                    } catch (InvalidAttributeValueException e1) {
-                        e1.printStackTrace();
+                    key_counter++;
+                    this.gui.repaint();
+                    break;
+                case("Remove Node"):
+                    this.dialog = new JDialog(gui, "Enter Key", true);
+                    this.dialog.setSize(180, 60);
+                    JFormattedTextField textBox1 = new JFormattedTextField();
+                    textBox1.setName("Remove");
+                    textBox1.addActionListener(new TextBox_hendler(gui, textBox1));
+                    this.dialog.add(textBox1);
+                    this.dialog.setLocationRelativeTo(gui);
+                    this.dialog.setVisible(true);
+                    break;
+                case "Connect": case "Disconnect":
+                    this.dialog = new JDialog(gui, "Enter Pair: key1-key2", true);
+                    this.dialog.setSize(300, 60);
+                    JFormattedTextField textBox2 = new JFormattedTextField();
+                    textBox2.setName(e.getActionCommand());
+                    
+                    textBox2.addActionListener(new TextBox_hendler(gui, textBox2));
+                    this.dialog.add(textBox2);
+                    this.dialog.setLocationRelativeTo(gui);
+                    this.dialog.setVisible(true);
+                    break;
+                case "Max Match":
+                    RunnableGraphAlgo ga = new RunnableGraphAlgo(step, this);
+                    ga.init(gui.g);
+                    boolean s_b_s = gui.getStepByStepStatus();
+                    if(s_b_s){
+                        try {
+                            Executor executor = Executors.newSingleThreadExecutor();
+                            executor.execute(ga);
+                        } catch (Throwable e1) {
+                            e1.printStackTrace();
+                        }
                     }
-                    gui.repaint();
-                }
-            }
+                    else{
+                        weighted_graph_algorithms ga_simple = new WGraph_Algo();
+                        ga_simple.init(gui.g);
+                        try {
+                            ga_simple.maxMatchHungarian();
+                        } catch (InvalidAttributeValueException e1) {
+                            e1.printStackTrace();
+                        }
+                        gui.repaint();
+                    }
+                    break;
+                case "Save Graph":
+                    fileChooser = new JFileChooser();
+                    fileChooser.setDialogTitle("Specify a file to save"); 
+                    this.graph_algo.init(gui.g);
+                    int userSelection1 = fileChooser.showSaveDialog(gui);
+                    if (userSelection1 == JFileChooser.APPROVE_OPTION) {
+                        File fileToSave = fileChooser.getSelectedFile();
+                        System.out.println("Saving as file: " + fileToSave.getAbsolutePath());
+                        this.graph_algo.save(fileToSave.getAbsolutePath());
+                        System.out.println("Saved!");
+                    }
+                    break;
+                case "Load Graph":
+                    synchronized(gui.g){
 
+                        fileChooser = new JFileChooser();
+                        fileChooser.setDialogTitle("Specify a file to save");   
+                        
+                        int userSelection2 = fileChooser.showOpenDialog(gui);
+                        if (userSelection2 == JFileChooser.APPROVE_OPTION) {
+                            File fileToLoad = fileChooser.getSelectedFile();
+                            System.out.println("Loading file: " + fileToLoad.getAbsolutePath());
+                            try{
+                                if(this.graph_algo.load(fileToLoad.getAbsolutePath())){
+                                    System.out.println("Loaded!");
+                                    gui.g = this.graph_algo.getGraph();
+                                    key_counter = (int)gui.g.getHighest_key();
+                                    System.out.println(key_counter);
+                                    gui.repaint();
+                                }
+                            }
+                            catch(Exception e1){
+                                e1.printStackTrace();
+                            }
+                        }
+                    }
+                    break;
+            }
         }
 
         @Override
@@ -275,6 +314,7 @@ public class Gui extends JFrame{
                 (int)(d0.y()+s0.y())/2-10);
             */
         }
+        
         @Override
         public void mouseClicked(MouseEvent e) {
             if(e.getButton() == 1){
@@ -367,6 +407,17 @@ public class Gui extends JFrame{
         this.g = g;
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setExtendedState(JFrame.MAXIMIZED_BOTH); 
+        
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Specify a file to save");   
+ 
+        JMenuBar menu_bar = new JMenuBar();
+        JMenu file_menu = new JMenu("file");
+        JMenuItem save_menuItem = new JMenuItem("Save Graph");
+        JMenuItem load_menuItem = new JMenuItem("Load Graph");
+        
+        this.setJMenuBar(menu_bar);
+        
         JPanel buttons_panel = new JPanel();
         Paint_panel graph_panel = new Paint_panel();
         JPanel rights_reserved_panel = new JPanel();
@@ -380,6 +431,10 @@ public class Gui extends JFrame{
         JLabel rightsReserved = new JLabel("<html>All Rights Reseved To: <a href=' '>https://github.com/achiyazigi</a></html>");
 
         this.stepByStepCheckBox = new JCheckBox("Step By Step");
+        
+        file_menu.add(save_menuItem);
+        file_menu.add(load_menuItem);
+        menu_bar.add(file_menu);
 
         buttons_panel.add(addNodeButton);
         buttons_panel.add(removeNodeButton);
@@ -387,13 +442,16 @@ public class Gui extends JFrame{
         buttons_panel.add(disconnectButton);
         buttons_panel.add(maxMatch_hungarianButton);
         buttons_panel.add(stepByStepCheckBox);
+        
+        rights_reserved_panel.add(BorderLayout.CENTER, rightsReserved);
 
         graph_panel.addMouseListener(graph_panel);
         graph_panel.addMouseMotionListener(graph_panel);
         graph_panel.setToolTipText("<html><p>Left Click anywhere to add node.</p><p>Right Click on a node to remove it.</p><p>Drag between nodes to connect.</p><p>Drag with Right Click to disconnect.</p></html>");
-
-        rights_reserved_panel.add(BorderLayout.CENTER, rightsReserved);
-
+        
+        save_menuItem.addActionListener(gh);
+        load_menuItem.addActionListener(gh);
+        
         addNodeButton.addActionListener(gh);
         removeNodeButton.addActionListener(gh);
         ConnectButton.addActionListener(gh);

@@ -93,4 +93,7 @@ public interface weighted_graph {
      * @return
      */
     public int getMC();
+
+    public long getHighest_key();
+    public void setHighest_key(long highest_key);
 }

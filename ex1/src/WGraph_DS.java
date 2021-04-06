@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import jdk.jfr.Unsigned;
+
 public class WGraph_DS implements weighted_graph, Serializable{
     
 
@@ -90,12 +92,14 @@ public class WGraph_DS implements weighted_graph, Serializable{
     private HashMap<Integer,node_info> v;
     private HashMap<Integer,HashMap<node_info,edge_info>> e;
     private int MC;
+    private long highest_key;
     private int edges;
 
     public WGraph_DS(){
         this.v = new HashMap<Integer, node_info>();
         this.e = new HashMap<Integer,HashMap<node_info,edge_info>>();
         this.MC = 0;
+        this.highest_key = 0;
     }
 
     public WGraph_DS(weighted_graph other){
@@ -119,6 +123,7 @@ public class WGraph_DS implements weighted_graph, Serializable{
         }
         this.edges = other.edgeSize();
         this.MC = other.getMC();
+        this.highest_key = other.getHighest_key();
     }
 
     
@@ -174,6 +179,9 @@ public class WGraph_DS implements weighted_graph, Serializable{
             this.v.put(key, new NodeInfo(key));
             this.e.put(key, new HashMap<node_info, edge_info>());
             this.MC ++;
+        }
+        if(key > this.highest_key){
+            this.highest_key = key;
         }
     }
 
@@ -295,7 +303,7 @@ public class WGraph_DS implements weighted_graph, Serializable{
         for (node_info n : this.getV()) {
             for (node_info ni : this.getV(n.getKey())) {
                 if(! o.hasEdge(n.getKey(), ni.getKey())) return false;
-                if( o.getEdge(n.getKey(), ni.getKey()) != this.getEdge(n.getKey(), ni.getKey())) return false;
+                if( !o.getEdge(n.getKey(), ni.getKey()).equals(this.getEdge(n.getKey(), ni.getKey()))) return false;
             }
         }
         return (o.nodeSize() == this.nodeSize());
@@ -313,6 +321,14 @@ public class WGraph_DS implements weighted_graph, Serializable{
             res+=") ";
         }
         return res+"}";
+    }
+
+    public long getHighest_key() {
+        return highest_key;
+    }
+
+    public void setHighest_key(long highest_key) {
+        this.highest_key = highest_key;
     }
 
 }

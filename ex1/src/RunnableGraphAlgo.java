@@ -49,6 +49,7 @@ public class RunnableGraphAlgo extends WGraph_Algo implements Runnable{
             recolor(P);
             this.observer.update(null, null);
             try {
+                Thread.currentThread();
                 Thread.sleep(1000);
             } catch (InterruptedException e1) {
                 // TODO Auto-generated catch block

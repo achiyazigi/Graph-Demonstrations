@@ -379,6 +379,7 @@ public class test_WGraph_Algo {
         weighted_graph_algorithms ga = new WGraph_Algo();
         ga.init(g0);
         String file_name = System.getProperty("user.dir")+"\\g0";
+        System.out.println(file_name);
         remove_file(file_name);
         ga.save(file_name);
         ga.init(new WGraph_DS());

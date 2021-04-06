@@ -1,6 +1,9 @@
 package ex1.src;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -154,6 +157,13 @@ public class WGraph_Algo implements weighted_graph_algorithms {
      */
     @Override
     public boolean save(String file_name) {
+        try {
+            Path path = Paths.get(file_name);
+            Files.deleteIfExists(path);
+        } catch (IOException x) {
+            // File permission problems are caught here.
+            System.err.println(x);
+        }
         ObjectOutputStream oos;
         boolean ans = false;
         try {
