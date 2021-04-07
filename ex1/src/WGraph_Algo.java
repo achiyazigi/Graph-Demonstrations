@@ -12,16 +12,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
-import java.util.concurrent.Executor;
 
 import javax.management.InvalidAttributeValueException;
-import javax.swing.JFrame;
 
-import kotlin.Pair;
 
 public class WGraph_Algo implements weighted_graph_algorithms {
 
     private weighted_graph g;
+    private int lastMC;
+    private HashSet<edge_info> match = new HashSet<>();
+    private kotlin.Pair<Collection<node_info>,Collection<node_info>> ab;   
 
     /**
      * Graph to initialize.
@@ -30,6 +30,9 @@ public class WGraph_Algo implements weighted_graph_algorithms {
     @Override
     public void init(weighted_graph g) {
         this.g = g;
+        lastMC = 0;
+        this.updateMatch();
+
     }
 
     /**
@@ -233,11 +236,44 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         }
     }
 
-   
+    public LinkedList<edge_info> maxMatchStep() throws InvalidAttributeValueException {
+        this.bipartite();
+        LinkedList<edge_info> P;
+        if((P = this.augmenting(this.ab)) != null){
+            System.out.println("found aug path:\n"+P);
+            this.recolor(P);
+        }
+        else{
+            for (node_info n : this.g.getV()) {
+                int n_key = n.getKey();
+                for (node_info ni : this.g.getV(n_key)) {
+                    edge_info e = g.getEdge(n_key, ni.getKey());
+                    if(e.isInMatch()){
+                        this.match.add(e);
+                    }
+                }
+            }
+            System.out.println("The Max Match Found:\n"+this.match);
+        }
+        return P;
+    }
+
+    protected void updateMatch() {
+        this.match.clear();
+        for (node_info u : this.g.getV()) {
+            int ukey = u.getKey();
+            for (node_info v : this.g.getV(ukey)) {
+                int vkey = v.getKey();
+                edge_info e = this.g.getEdge(ukey, vkey);
+                if(e.isInMatch()){
+                    this.match.add(e);
+                }
+            }
+        }
+    }
 
     public void maxMatchHungarian() throws InvalidAttributeValueException{
-        HashSet<edge_info> M = new HashSet<>();
-        kotlin.Pair<Collection<node_info>,Collection<node_info>> ab = bipartite();
+        this.bipartite();
         LinkedList<edge_info> P = null;
         while((P = augmenting(ab))!=null){
             System.out.println("found aug path:\n"+P);
@@ -248,14 +284,19 @@ public class WGraph_Algo implements weighted_graph_algorithms {
             for (node_info ni : this.g.getV(n_key)) {
                 edge_info e = g.getEdge(n_key, ni.getKey());
                 if(e.isInMatch()){
-                    M.add(e);
+                    this.match.add(e);
                 }
             }
         }
-        System.out.println(M);
+        System.out.println("The Max Match Found:\n"+this.match);
     }
 
     protected LinkedList<edge_info> augmenting(kotlin.Pair<Collection<node_info>,Collection<node_info>> ab) {
+        try {
+            this.bipartite();
+        } catch (InvalidAttributeValueException e) {
+            e.printStackTrace();
+        }
         this.reset();
         Stack<node_info> s = new Stack<>();
         Collection<node_info> a = ab.getFirst();
@@ -307,27 +348,30 @@ public class WGraph_Algo implements weighted_graph_algorithms {
 
     private Collection<node_info> notInMatch(Collection<node_info> col) {
         Collection<node_info> res = new LinkedList<>();
-        for (node_info n : col) {
-            int n_key = n.getKey();
-            boolean inMatch = false;
-            for (node_info ni : this.g.getV(n_key)) {
-                if(this.g.getEdge(n_key, ni.getKey()).isInMatch()){
-                    inMatch = true;
-                    break;
-                }
+        for (edge_info e : this.match){
+            node_info first = g.getNode(e.getNodes().getFirst());
+            node_info second = g.getNode(e.getNodes().getSecond());
+            if(col.remove(first)){
+                res.add(first);
             }
-            if(!inMatch){
-                res.add(n);
+            if(col.remove(second)){
+                res.add(second);
             }
         }
+        Collection<node_info> temp = col;
+        col = res;
+        res = temp;   
+        // System.out.println(res);
         return res;
     }
 
-    protected Pair<Collection<node_info>, Collection<node_info>> bipartite() throws InvalidAttributeValueException {
+    protected void bipartite() throws InvalidAttributeValueException {
+        if(this.g.getMC() == this.lastMC) {return;}
+        this.lastMC = g.getMC();
         this.reset();
         Collection<node_info> a = new LinkedList<>();
         Collection<node_info> b = new LinkedList<>();
-        kotlin.Pair<Collection<node_info>,Collection<node_info>> ab = new kotlin.Pair<Collection<node_info>,Collection<node_info>>(a, b);
+        this.ab = new kotlin.Pair<Collection<node_info>,Collection<node_info>>(a, b);
         Queue<node_info> q = new LinkedList<>();
         for (node_info cur : g.getV()) {
             if(cur.getTag() != 1){
@@ -352,17 +396,21 @@ public class WGraph_Algo implements weighted_graph_algorithms {
                 }
             }
         }
-        
-        System.out.println(a);
-        if(!Collections.disjoint(a, b) && a.size() + b.size() == this.g.nodeSize()){
+        if(!Collections.disjoint(a, b) || a.size() + b.size() != this.g.nodeSize()){
             throw new InvalidAttributeValueException("not connected or not bipartite graph");
         }
-        return ab;
+        
     }
 
     protected void recolor(LinkedList<edge_info> p) {
         for (edge_info n : p) {
             n.setInMatch(!n.isInMatch());
+            if(n.isInMatch()){
+                this.match.add(n);
+            }
+            else{
+                this.match.remove(n);
+            }
         }
     }
 }

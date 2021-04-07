@@ -1,6 +1,9 @@
 package ex1.src;
 
 import java.util.Collection;
+import java.util.LinkedList;
+
+import javax.management.InvalidAttributeValueException;
 
 /**
  * This interface represents an undirectional weighted graph.

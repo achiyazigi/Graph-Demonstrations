@@ -1,10 +1,9 @@
 package ex1.src;
 
+import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executor;
 
 import javax.management.InvalidAttributeValueException;
-import javax.swing.JFrame;
 /**
  * This interface represents an Undirected (positive) Weighted Graph Theory algorithms including:
  * 0. clone(); (copy)
@@ -79,5 +78,7 @@ public interface weighted_graph_algorithms {
     public boolean load(String file);
 
     public void maxMatchHungarian() throws InvalidAttributeValueException;
+    public LinkedList<edge_info> maxMatchStep() throws InvalidAttributeValueException;
+
 
 }

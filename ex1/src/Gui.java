@@ -4,38 +4,34 @@ import javax.management.InvalidAttributeValueException;
 import javax.swing.*;
 import javax.swing.event.MouseInputListener;
 
-import javax.swing.plaf.metal.MetalButtonUI;
 
 import java.awt.*;
-import java.util.Observable;
-import java.util.Observer;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.awt.event.*;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Scanner;
 
 public class Gui extends JFrame{
-    public static int key_counter = 0;
-    
-    /**
-     *
-     */
     private static final long serialVersionUID = 1L;
+    public static int key_counter = 0;
     public weighted_graph g;
     
-
-
-    private static class Graph_hendler implements ActionListener, Observer{
-        final Lock lock = new ReentrantLock();
-        final Condition step  = lock.newCondition();
+    
+    
+    private static class Graph_hendler implements ActionListener{
         private weighted_graph_algorithms graph_algo;
-
+        static int x = 20;
+        static int y = 20;
+        private Gui gui;
+        private JDialog dialog;
+        private JFileChooser fileChooser;
+        
         private class TextBox_hendler implements ActionListener{
             private Gui gui;
             private JFormattedTextField textBox;
@@ -103,16 +99,10 @@ public class Gui extends JFrame{
             }
         }
 
-        static int x = 20;
-        static int y = 20;
-        private Gui gui;
-        private JDialog dialog;
-        private JFileChooser fileChooser;
         public Graph_hendler(Gui gui){
             super();
             this.gui = gui;
             graph_algo = new WGraph_Algo();
-            graph_algo.init(gui.g);
         }
 
         @Override
@@ -132,7 +122,7 @@ public class Gui extends JFrame{
                     this.gui.repaint();
                     break;
                 case("Remove Node"):
-                    this.dialog = new JDialog(gui, "Enter Key", true);
+                    this.dialog = new JDialog(gui, "Enter Key To Remove", true);
                     this.dialog.setSize(180, 60);
                     JFormattedTextField textBox1 = new JFormattedTextField();
                     textBox1.setName("Remove");
@@ -142,7 +132,7 @@ public class Gui extends JFrame{
                     this.dialog.setVisible(true);
                     break;
                 case "Connect": case "Disconnect":
-                    this.dialog = new JDialog(gui, "Enter Pair: key1-key2", true);
+                    this.dialog = new JDialog(gui, "Enter Pair: key1-key2 To "+e.getActionCommand(), true);
                     this.dialog.setSize(300, 60);
                     JFormattedTextField textBox2 = new JFormattedTextField();
                     textBox2.setName(e.getActionCommand());
@@ -153,22 +143,40 @@ public class Gui extends JFrame{
                     this.dialog.setVisible(true);
                     break;
                 case "Max Match":
-                    RunnableGraphAlgo ga = new RunnableGraphAlgo(step, this);
-                    ga.init(gui.g);
+                    this.graph_algo.init(gui.g);
                     boolean s_b_s = gui.getStepByStepStatus();
                     if(s_b_s){
-                        try {
-                            Executor executor = Executors.newSingleThreadExecutor();
-                            executor.execute(ga);
-                        } catch (Throwable e1) {
-                            e1.printStackTrace();
-                        }
+                        JButton next_step = new JButton("Next Step");
+                        
+                        gui.getButtons_panel().add(next_step);
+                        gui.validate();
+                        next_step.addActionListener(new ActionListener(){
+
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                try {
+                                    if(graph_algo.maxMatchStep() != null && gui.getStepByStepStatus()){
+                                        gui.repaint();
+                                    }
+                                    else{
+                                        next_step.setEnabled(false);
+                                        gui.getButtons_panel().remove(next_step);
+                                        gui.repaint();
+                                        gui.validate();
+                                    }
+                                } catch (InvalidAttributeValueException e1) {
+                                    e1.printStackTrace();
+                                }
+                                
+                            }
+                            
+                        });
                     }
                     else{
-                        weighted_graph_algorithms ga_simple = new WGraph_Algo();
-                        ga_simple.init(gui.g);
+
+                        this.graph_algo.init(gui.g);
                         try {
-                            ga_simple.maxMatchHungarian();
+                            this.graph_algo.maxMatchHungarian();
                         } catch (InvalidAttributeValueException e1) {
                             e1.printStackTrace();
                         }
@@ -176,7 +184,7 @@ public class Gui extends JFrame{
                     }
                     break;
                 case "Save Graph":
-                    fileChooser = new JFileChooser();
+                    fileChooser = new JFileChooser(System.getProperty("user.dir"));
                     fileChooser.setDialogTitle("Specify a file to save"); 
                     this.graph_algo.init(gui.g);
                     int userSelection1 = fileChooser.showSaveDialog(gui);
@@ -190,8 +198,8 @@ public class Gui extends JFrame{
                 case "Load Graph":
                     synchronized(gui.g){
 
-                        fileChooser = new JFileChooser();
-                        fileChooser.setDialogTitle("Specify a file to save");   
+                        fileChooser = new JFileChooser(System.getProperty("user.dir"));
+                        fileChooser.setDialogTitle("Specify a file to load");   
                         
                         int userSelection2 = fileChooser.showOpenDialog(gui);
                         if (userSelection2 == JFileChooser.APPROVE_OPTION) {
@@ -201,8 +209,7 @@ public class Gui extends JFrame{
                                 if(this.graph_algo.load(fileToLoad.getAbsolutePath())){
                                     System.out.println("Loaded!");
                                     gui.g = this.graph_algo.getGraph();
-                                    key_counter = (int)gui.g.getHighest_key();
-                                    System.out.println(key_counter);
+                                    key_counter = (int)gui.g.getHighest_key() + 1;
                                     gui.repaint();
                                 }
                             }
@@ -214,12 +221,6 @@ public class Gui extends JFrame{
                     break;
             }
         }
-
-        @Override
-        public void update(Observable o, Object arg) {
-            this.gui.repaint();
-        }
-
     }
 
     private class Paint_panel extends JPanel implements MouseInputListener{
@@ -317,24 +318,25 @@ public class Gui extends JFrame{
         
         @Override
         public void mouseClicked(MouseEvent e) {
+            node_info changed = null;
             if(e.getButton() == 1){
                 g.addNode(key_counter);
-                node_info added = g.getNode(key_counter);
-                added.setX(e.getX());
-                added.setY(e.getY());
+                changed = g.getNode(key_counter);
+                changed.setX(e.getX());
+                changed.setY(e.getY());
                 key_counter ++;
             }
             else if(e.getButton() == 3){
                 Point remove_spot = e.getPoint();
                 for (node_info n : g.getV()) {
                     if(remove_spot.distance(n.X(), n.Y()) < 20){
-                        g.removeNode(n.getKey());
+                        changed = g.removeNode(n.getKey());
                         break;
                     }
                 }
             }
 
-            this.repaint();
+            this.repaint(changed.X() - 15, changed.Y() - 15, 40, 40);
         }
         @Override
         public void mousePressed(MouseEvent e) {
@@ -400,6 +402,8 @@ public class Gui extends JFrame{
 
     private Graph_hendler gh;
     private JCheckBox stepByStepCheckBox;
+    private JPanel buttons_panel;
+    private final PrintStream original_stream = System.out;
 
     public Gui(String title, weighted_graph g){
         super(title);
@@ -407,18 +411,23 @@ public class Gui extends JFrame{
         this.g = g;
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setExtendedState(JFrame.MAXIMIZED_BOTH); 
+
+
         
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Specify a file to save");   
  
         JMenuBar menu_bar = new JMenuBar();
-        JMenu file_menu = new JMenu("file");
+        JMenu file_menu = new JMenu("File");
+        JMenu console_menu = new JMenu("Console");
         JMenuItem save_menuItem = new JMenuItem("Save Graph");
         JMenuItem load_menuItem = new JMenuItem("Load Graph");
+        JMenuItem showConsole_menuItem = new JMenuItem("Show Console");
         
+        JDialog consDialog = new JDialog(this,"Console", false);
+
         this.setJMenuBar(menu_bar);
         
-        JPanel buttons_panel = new JPanel();
         Paint_panel graph_panel = new Paint_panel();
         JPanel rights_reserved_panel = new JPanel();
 
@@ -428,20 +437,26 @@ public class Gui extends JFrame{
         JButton disconnectButton = new JButton("Disconnect");
         JButton maxMatch_hungarianButton = new JButton("Max Match");
 
+        JTextArea console_output_area = new JTextArea();
+        JTextAreaOutputStream stream = new JTextAreaOutputStream(console_output_area);
+
         JLabel rightsReserved = new JLabel("<html>All Rights Reseved To: <a href=' '>https://github.com/achiyazigi</a></html>");
 
         this.stepByStepCheckBox = new JCheckBox("Step By Step");
         
+        console_menu.add(showConsole_menuItem);
         file_menu.add(save_menuItem);
         file_menu.add(load_menuItem);
         menu_bar.add(file_menu);
+        menu_bar.add(console_menu);
 
-        buttons_panel.add(addNodeButton);
-        buttons_panel.add(removeNodeButton);
-        buttons_panel.add(ConnectButton);
-        buttons_panel.add(disconnectButton);
-        buttons_panel.add(maxMatch_hungarianButton);
-        buttons_panel.add(stepByStepCheckBox);
+        this.buttons_panel = new JPanel();
+        this.buttons_panel.add(addNodeButton);
+        this.buttons_panel.add(removeNodeButton);
+        this.buttons_panel.add(ConnectButton);
+        this.buttons_panel.add(disconnectButton);
+        this.buttons_panel.add(maxMatch_hungarianButton);
+        this.buttons_panel.add(stepByStepCheckBox);
         
         rights_reserved_panel.add(BorderLayout.CENTER, rightsReserved);
 
@@ -451,7 +466,35 @@ public class Gui extends JFrame{
         
         save_menuItem.addActionListener(gh);
         load_menuItem.addActionListener(gh);
+
+        consDialog.add(console_output_area);
+        consDialog.setSize(300, 300);
+        consDialog.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        consDialog.addWindowListener(new WindowAdapter(){
+            @Override
+            public void windowClosed(WindowEvent e) {
+                System.setOut(original_stream);
+                consDialog.setEnabled(false);
+                System.out.println("redirected console output to this window...");
+            }
+        });
+
+        showConsole_menuItem.addActionListener(new ActionListener(){
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                
+                consDialog.setVisible(true);
+                System.setOut(new PrintStream(stream));
+                
+                System.out.println("redirected console output to this window...");
+                
+            }
+            
+        });
         
+        console_output_area.setEditable(false);
+
         addNodeButton.addActionListener(gh);
         removeNodeButton.addActionListener(gh);
         ConnectButton.addActionListener(gh);
@@ -479,7 +522,7 @@ public class Gui extends JFrame{
             
         });
 
-        this.getContentPane().add(BorderLayout.NORTH, buttons_panel);
+        this.getContentPane().add(BorderLayout.NORTH, this.buttons_panel);
         this.getContentPane().add(BorderLayout.CENTER, graph_panel);
         this.getContentPane().add(BorderLayout.SOUTH, rights_reserved_panel);
         
@@ -491,6 +534,10 @@ public class Gui extends JFrame{
 
     public void setStepByStepStatus(boolean status){
         this.stepByStepCheckBox.setSelected(status);
+    }
+
+    public JPanel getButtons_panel() {
+        return buttons_panel;
     }
 
 
