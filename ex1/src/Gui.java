@@ -108,6 +108,7 @@ public class Gui extends JFrame{
         @Override
         public void actionPerformed(ActionEvent e) {
             switch(e.getActionCommand()){
+
                 case("Add Node"):
                     gui.g.addNode(key_counter);
                     node_info added = gui.g.getNode(key_counter);
@@ -121,6 +122,7 @@ public class Gui extends JFrame{
                     key_counter++;
                     this.gui.repaint();
                     break;
+
                 case("Remove Node"):
                     this.dialog = new JDialog(gui, "Enter Key To Remove", true);
                     this.dialog.setSize(180, 60);
@@ -131,6 +133,7 @@ public class Gui extends JFrame{
                     this.dialog.setLocationRelativeTo(gui);
                     this.dialog.setVisible(true);
                     break;
+
                 case "Connect": case "Disconnect":
                     this.dialog = new JDialog(gui, "Enter Pair: key1-key2 To "+e.getActionCommand(), true);
                     this.dialog.setSize(300, 60);
@@ -142,47 +145,25 @@ public class Gui extends JFrame{
                     this.dialog.setLocationRelativeTo(gui);
                     this.dialog.setVisible(true);
                     break;
+
                 case "Max Match":
                     this.graph_algo.init(gui.g);
-                    boolean s_b_s = gui.getStepByStepStatus();
-                    if(s_b_s){
-                        JButton next_step = new JButton("Next Step");
-                        
-                        gui.getButtons_panel().add(next_step);
-                        gui.validate();
-                        next_step.addActionListener(new ActionListener(){
 
-                            @Override
-                            public void actionPerformed(ActionEvent e) {
-                                try {
-                                    if(graph_algo.maxMatchStep() != null && gui.getStepByStepStatus()){
-                                        gui.repaint();
-                                    }
-                                    else{
-                                        next_step.setEnabled(false);
-                                        gui.getButtons_panel().remove(next_step);
-                                        gui.repaint();
-                                        gui.validate();
-                                    }
-                                } catch (InvalidAttributeValueException e1) {
-                                    e1.printStackTrace();
-                                }
-                                
-                            }
-                            
-                        });
-                    }
-                    else{
-
-                        this.graph_algo.init(gui.g);
-                        try {
-                            this.graph_algo.maxMatchHungarian();
-                        } catch (InvalidAttributeValueException e1) {
-                            e1.printStackTrace();
-                        }
-                        gui.repaint();
-                    }
+                    this.graph_algo.maxMatchHungarian();
+                    
+                    
+                    gui.repaint();
                     break;
+                    
+                case "Max Match Step":
+                    this.graph_algo.init(gui.g);
+                    if(graph_algo.maxMatchStep() == null){
+                        gui.setStepByStepStatus(false);
+                    }
+                    gui.repaint();
+                    break;
+                    
+                    
                 case "Save Graph":
                     fileChooser = new JFileChooser(System.getProperty("user.dir"));
                     fileChooser.setDialogTitle("Specify a file to save"); 
@@ -335,8 +316,10 @@ public class Gui extends JFrame{
                     }
                 }
             }
+            if(changed != null){
 
-            this.repaint(changed.X() - 15, changed.Y() - 15, 40, 40);
+                this.repaint(changed.X() - 15, changed.Y() - 15, 40, 40);
+            }
         }
         @Override
         public void mousePressed(MouseEvent e) {
@@ -402,8 +385,9 @@ public class Gui extends JFrame{
 
     private Graph_hendler gh;
     private JCheckBox stepByStepCheckBox;
+    private JButton maxMatch_hungarianButton;
     private JPanel buttons_panel;
-    private final PrintStream original_stream = System.out;
+    
 
     public Gui(String title, weighted_graph g){
         super(title);
@@ -430,15 +414,17 @@ public class Gui extends JFrame{
         
         Paint_panel graph_panel = new Paint_panel();
         JPanel rights_reserved_panel = new JPanel();
-
+        
         JButton addNodeButton = new JButton("Add Node");
         JButton removeNodeButton = new JButton("Remove Node");
         JButton ConnectButton = new JButton("Connect");
         JButton disconnectButton = new JButton("Disconnect");
-        JButton maxMatch_hungarianButton = new JButton("Max Match");
-
+        this.maxMatch_hungarianButton = new JButton("Max Match");
+        
         JTextArea console_output_area = new JTextArea();
         JTextAreaOutputStream stream = new JTextAreaOutputStream(console_output_area);
+        JScrollPane scroll = new JScrollPane (console_output_area); // bug!
+        //TODO: fix reopen- wont enable scrolling again
 
         JLabel rightsReserved = new JLabel("<html>All Rights Reseved To: <a href=' '>https://github.com/achiyazigi</a></html>");
 
@@ -467,16 +453,18 @@ public class Gui extends JFrame{
         save_menuItem.addActionListener(gh);
         load_menuItem.addActionListener(gh);
 
-        consDialog.add(console_output_area);
+        consDialog.add(scroll);
         consDialog.setSize(300, 300);
         consDialog.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         consDialog.addWindowListener(new WindowAdapter(){
             @Override
             public void windowClosed(WindowEvent e) {
-                System.setOut(original_stream);
+                System.setOut(Main.original_stream);
                 consDialog.setEnabled(false);
+                consDialog.dispose();
                 System.out.println("redirected console output to this window...");
             }
+
         });
 
         showConsole_menuItem.addActionListener(new ActionListener(){
@@ -501,6 +489,20 @@ public class Gui extends JFrame{
         maxMatch_hungarianButton.addActionListener(gh);
         disconnectButton.addActionListener(gh);
         
+        stepByStepCheckBox.addActionListener(new ActionListener(){
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(getStepByStepStatus()){
+                    maxMatch_hungarianButton.setText("Max Match Step");
+                }
+                else{
+                    maxMatch_hungarianButton.setText("Max Match");
+                }
+            }
+            
+        });
+
         rightsReserved.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         rightsReserved.addMouseListener(new MouseAdapter(){
 
@@ -515,10 +517,10 @@ public class Gui extends JFrame{
                 }                
             }
            
-            @Override
-            public void mouseEntered(MouseEvent e) {
+            // @Override
+            // public void mouseEntered(MouseEvent e) {
 
-            }
+            // }
             
         });
 
@@ -534,14 +536,17 @@ public class Gui extends JFrame{
 
     public void setStepByStepStatus(boolean status){
         this.stepByStepCheckBox.setSelected(status);
+        if(status){
+            this.maxMatch_hungarianButton.setText("Max Match Step");
+        }
+        else{
+            this.maxMatch_hungarianButton.setText("Max Match");
+        }
+        
     }
 
     public JPanel getButtons_panel() {
         return buttons_panel;
     }
-
-
-
-    
-    
+  
 }

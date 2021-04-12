@@ -77,8 +77,8 @@ public interface weighted_graph_algorithms {
      */
     public boolean load(String file);
 
-    public void maxMatchHungarian() throws InvalidAttributeValueException;
-    public LinkedList<edge_info> maxMatchStep() throws InvalidAttributeValueException;
+    public void maxMatchHungarian();
+    public LinkedList<edge_info> maxMatchStep();
 
 
 }
