@@ -423,8 +423,10 @@ public class Gui extends JFrame{
         
         JTextArea console_output_area = new JTextArea();
         JTextAreaOutputStream stream = new JTextAreaOutputStream(console_output_area);
-        JScrollPane scroll = new JScrollPane (console_output_area); // bug!
-        //TODO: fix reopen- wont enable scrolling again
+        JScrollPane scroll = new JScrollPane (console_output_area);
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        
 
         JLabel rightsReserved = new JLabel("<html>All Rights Reseved To: <a href=' '>https://github.com/achiyazigi</a></html>");
 
@@ -455,15 +457,14 @@ public class Gui extends JFrame{
 
         consDialog.add(scroll);
         consDialog.setSize(300, 300);
-        consDialog.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        consDialog.setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
         consDialog.addWindowListener(new WindowAdapter(){
             @Override
-            public void windowClosed(WindowEvent e) {
+            public void windowClosing(WindowEvent e) {
                 System.setOut(Main.original_stream);
-                consDialog.setEnabled(false);
-                consDialog.dispose();
                 System.out.println("redirected console output to this window...");
             }
+            
 
         });
 
