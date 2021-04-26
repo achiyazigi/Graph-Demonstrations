@@ -348,3 +348,7 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+demonstation-for-linkedin.mov
+new_saved_graph
+.gitignore
+.vscode/settings.json

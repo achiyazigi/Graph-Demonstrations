@@ -1,21 +1,16 @@
 package ex1.src;
 
-import javax.management.InvalidAttributeValueException;
 import javax.swing.*;
 import javax.swing.event.MouseInputListener;
 
 
 import java.awt.*;
 import java.awt.event.*;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Scanner;
 
 public class Gui extends JFrame{
     private static final long serialVersionUID = 1L;

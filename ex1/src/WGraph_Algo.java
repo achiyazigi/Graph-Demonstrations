@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -13,7 +12,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
 
-import javax.management.InvalidAttributeValueException;
 
 public class WGraph_Algo implements weighted_graph_algorithms {
 
@@ -234,7 +232,7 @@ public class WGraph_Algo implements weighted_graph_algorithms {
     }
 
     /**
-     * reseting tags and info as a preperation to sortestPathDist an isConnected.
+     * reseting tags and info as a preperation to perform an algo func.
      */
     private void reset() {
         for (node_info n : this.g.getV()) {
@@ -243,15 +241,23 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         }
     }
 
+
+    /* 
+     * handle the augmented path found.
+     * recoloring it and updating this.Match list.
+     */
     public LinkedList<edge_info> maxMatchStep() {
+
         this.bipartite();
         LinkedList<edge_info> P;
-        if ((P = this.augmenting(this.ab)) != null) {
+        if ((P = this.augmenting()) != null) {
 
             if (System.out == Main.original_stream) {
+                // printing to shell
                 System.out.println(MyColor.YELLOW_BACKGROUND_BRIGHT + "" + MyColor.BLUE_BOLD + "found aug path:"
                         + MyColor.RESET + "\n" + P);
             } else {
+                // printing to console JDialoge in Gui
                 System.out.println("found aug path:\n" + P);
             }
             this.recolor(P);
@@ -266,14 +272,19 @@ public class WGraph_Algo implements weighted_graph_algorithms {
                 }
             }
             if (System.out == Main.original_stream) {
+                // printing to shell
                 System.out.println(MyColor.YELLOW_BACKGROUND_BRIGHT + "" + MyColor.BLUE_BOLD + "The Max Match Found:" + MyColor.RESET + "\n" + this.match);
             } else {
+                // printing to console JDialoge in Gui
                 System.out.println("The Max Match Found:\n" + this.match);
             }
         }
         return P;
     }
 
+    /*
+     * if an untracked graph has been loaded, the inMatch list should be updated..
+     */
     protected void updateMatch() {
         this.match.clear();
         for (node_info u : this.g.getV()) {
@@ -288,14 +299,23 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         }
     }
 
+    /**
+     * perform a step of augmenting untill there is no more such path
+     */
     public void maxMatchHungarian(){
         while (maxMatchStep() != null) {
         }
     }
 
-    protected LinkedList<edge_info> augmenting(kotlin.Pair<Collection<node_info>, Collection<node_info>> ab) {
-        
-        this.bipartite();
+    /*
+     * assuming g is bipartite, the slices (A and B) are stored in this.ab
+     * DFS starting from not in match node in A, seeking for flipping edges (not/in match) till not in match node in B.
+     * could have been done counting odd number of edges in path but for simplicity i chose to use groups.
+     * am: all nodes not in match in A
+     * bm: all nodes not in match is B
+     * candi: a potential edge in path. if candi (u,v) wont be chosen, another path starting from u will be examined.
+     */
+    protected LinkedList<edge_info> augmenting() {
         
         this.reset();
         Stack<node_info> s = new Stack<>();
@@ -334,6 +354,9 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         return null;
     }
 
+    /*
+     * backtracking the desired aug path
+     */
     private LinkedList<edge_info> buildAugPath(node_info n) {
         LinkedList<edge_info> res = new LinkedList<>();
         node_info cur = n;
@@ -346,6 +369,9 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         return res;
     }
 
+    /*
+     * remove "unparticipating in match nodes" and return them as a separate collection
+     */
     private Collection<node_info> notInMatch(Collection<node_info> col) {
         Collection<node_info> res = new LinkedList<>();
         for (edge_info e : this.match) {
@@ -361,10 +387,14 @@ public class WGraph_Algo implements weighted_graph_algorithms {
         Collection<node_info> temp = col;
         col = res;
         res = temp;
-        // System.out.println(res);
         return res;
     }
 
+    /*
+     * assuming g is bipartite, and g has changed,
+     * runing BFS and taging 1 and 2 for neighbors (or 2 and 1),
+     * the function splits g into 2 groups A B and stores them in this.ab.
+     */
     protected void bipartite(){
         if (this.g.getMC() == this.lastMC && this.ab != null) {
             return;
@@ -401,6 +431,9 @@ public class WGraph_Algo implements weighted_graph_algorithms {
 
     }
 
+    /*
+     * p is an augmenting path so the function flip between not/in match edges.
+     */
     protected void recolor(LinkedList<edge_info> p) {
         for (edge_info n : p) {
             n.setInMatch(!n.isInMatch());
